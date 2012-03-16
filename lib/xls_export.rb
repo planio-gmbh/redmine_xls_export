@@ -1,25 +1,25 @@
 
-require 'query' 
+require 'query'
 require 'spreadsheet'
 
-class SpentTimeQueryColumn < QueryColumn  
+class SpentTimeQueryColumn < QueryColumn
   def caption
     l(:label_spent_time)
   end
-  
+
   def value(issue)
     issue.spent_hours
   end
 end
 
-class AttachmentQueryColumn < QueryColumn  
+class AttachmentQueryColumn < QueryColumn
   def caption
     l(:label_plugin_xlse_field_attachment)
   end
-  
+
   def value(issue)
   	return '' unless issue.attachments.any?
-  	
+
   	str = ''
   	issue.attachments.each do |a|
   		str << a.filename
@@ -45,7 +45,7 @@ module Redmine
       			ancestors << issue unless issue.leaf?
    			end
   		end
-		
+
 # options are
 # :relations - export relations
 # :watchers - export watchers
@@ -54,14 +54,14 @@ module Redmine
 # :history - export history
 # :attachments - export attachments info
 # :query_columns_only - export only columns from actual query
-# :group - group by query grouping  
+# :group - group by query grouping
 		def issues_to_xls2(issues, project, query, options = {}, sort_parent = false)
-	
+
 			Spreadsheet.client_encoding = 'UTF-8'
 			options[:date_format] ||= 'dd.mm.yyyy'
 			options.default=false
 			show_relations = options[:relations]
-			show_watchers = options[:watchers] 
+			show_watchers = options[:watchers]
 			show_time = options[:time]
 			show_descr = options[:description]
       show_hist = options[:history]
@@ -69,43 +69,43 @@ module Redmine
 			show_attachment = options[:attachments]
       date_format = options[:date_format]
 			group_by_query = query.grouped? ? options[:group] : false
-	
+
 			book = Spreadsheet::Workbook.new
-	    
+
 			issue_columns = []
-	    
+
 	    (query_columns_only == '1' ? query.columns : query.available_columns).each do |c|
 	    	if c.name == :formatted_relations
 	    		issue_columns << c unless show_relations != '1'
-				else    		
+				else
 		    	issue_columns << c unless !column_exists_for_project?(c,project)
 	    	end
 	    	if c.name == :estimated_hours and show_time == '1'
 	    		issue_columns << SpentTimeQueryColumn.new(:spent_time)
 	    	end
 	    end
-	    
+
 	    if show_watchers == '1'
 	    	issue_columns << QueryColumn.new(:watcher)
     	end
-    	
+
     	if show_attachment == '1'
     		issue_columns << AttachmentQueryColumn.new(:attachments)
     	end
-    	
+
     	if show_descr == '1'
 	    	issue_columns << QueryColumn.new(:description)
 	   end
-    
+
       if show_hist == '1'
         issue_columns << QueryColumn.new(:history)
       end
-	    
+
 	    sheet1 = nil
 			group = false
 			columns_width = []
 			idx = 0
-# xls rows			
+# xls rows
 			issue_list(issues) do |issue, level|
 
 				if group_by_query == '1'
@@ -123,48 +123,39 @@ module Redmine
 						columns_width=init_header_columns(sheet1,issue_columns)
 					end
 				end
-			
+
 				row = sheet1.row(idx+1)
-				
+
 				row.replace [issue.id]
-				
-				
+
+
 				lf_pos = get_value_width(issue.id)
 				columns_width[0] = lf_pos unless columns_width[0] >= lf_pos
-				
+
 				last_prj = project
 
 				if level > 0
-					s = s.to_s.rjust(level*3) 					
+					s = s.to_s.rjust(level*3)
 					issue.subject = s + issue.subject
 				end
-				
-        if issue.children? and sort_parent then
-          fmt = Spreadsheet::Format.new :weight => :bold
-        else
-          fmt = Spreadsheet::Format.new
-        end
 
 				issue_columns.each_with_index do |c, j|
 					v = if c.is_a?(QueryCustomFieldColumn)
 						case c.custom_field.field_format
 							when "int"
 								begin
-									fmt.number_format = "0"
 									Integer(issue.custom_value_for(c.custom_field).to_s)
 								rescue
 									show_value(issue.custom_value_for(c.custom_field))
 								end
 							when "float"
 								begin
-									fmt.number_format = "0.00"
 									Float(issue.custom_value_for(c.custom_field).to_s)
 								rescue
 									show_value(issue.custom_value_for(c.custom_field))
 								end
 							when "date"
 								begin
-									fmt.number_format = date_format
 									Date.parse(issue.custom_value_for(c.custom_field).to_s)
 								rescue
 									show_value(issue.custom_value_for(c.custom_field))
@@ -175,10 +166,9 @@ module Redmine
 					else
 						case c.name
 							when :done_ratio
-								fmt.number_format = "0%"
 								(Float(issue.send(c.name)))/100
 							when :description
-								descr_str = '' 
+								descr_str = ''
 								issue.description.to_s.each_char do |c_a|
 									if c_a != "\r"
 										descr_str << c_a
@@ -186,13 +176,13 @@ module Redmine
 								end
 								descr_str
 						when :history
-                hist_str = '' 
+                hist_str = ''
                 issue_updates = issue.journals.find(
                           :all, :include => [:user, :details],
                           :order => "#{Journal.table_name}.created_on ASC")
-                for journal in issue_updates                    
+                for journal in issue_updates
                     hist_str << format_time(journal.created_on) + " - " + journal.user.name
-                    hist_str << "\n"                    
+                    hist_str << "\n"
                     for detail in journal.details
                       hist_str <<  " - " + show_detail(detail, true)
                       hist_str << "\n" unless detail == journal.details.last
@@ -235,24 +225,22 @@ module Redmine
 								last_prj = issue.send(c.name)
 								last_prj
 							when :start_date, :due_date, :updated_on, :created_on
-								fmt.number_format = date_format
 								c.value(issue)
-						else							
+						else
 					 		issue.respond_to?(c.name) ? issue.send(c.name) : c.value(issue)
 						end
 					end
-					
-					value = ['Time', 'Date', 'Fixnum', 'Float', 'Integer', 'String', 'String'].include?(v.class.name) ? v : v.to_s
-					row.set_format(j+1, fmt)
+
+					value = ['Time', 'Date', 'Fixnum', 'Float', 'Integer', 'String'].include?(v.class.name) ? v : v.to_s
 					lf_pos = get_value_width(value)
 					columns_width[j+1] = lf_pos unless columns_width[j+1] >= lf_pos
 					row << value
 				end
-				
-				idx = idx + 1				
-				
+
+				idx = idx + 1
+
 			end
-			
+
 			if sheet1
 				update_sheet_formatting(sheet1,columns_width)
 			else
@@ -262,13 +250,13 @@ module Redmine
 
 			xls_stream = StringIO.new('')
 			book.write(xls_stream)
-	    
+
 			return xls_stream.string
 		end
-		
+
 		def column_exists_for_project?(column, project)
 			return true unless (column.is_a?(QueryCustomFieldColumn) && project != nil)
-			
+
 			project.trackers.each do |t|
 				t.custom_fields.each do |c|
 					if c.id == column.custom_field.id
@@ -276,27 +264,27 @@ module Redmine
 					end
 				end
 			end
-			
+
 			return false
 		end
-		
+
 		def init_header_columns(sheet1,columns)
-			
+
 			columns_width = [1]
 			sheet1.row(0).replace ["#"]
-			
+
 			columns.each do |c|
 				sheet1.row(0) << c.caption
 				columns_width << (get_value_width(c.caption)*1.1)
 			end
 # id
 			sheet1.column(0).default_format = Spreadsheet::Format.new(:number_format => "0")
-			
+
 			opt = Hash.new
 			columns.each_with_index do |c, idx|
 				width = 0
 				opt.clear
-				
+
 				if c.is_a?(QueryCustomFieldColumn)
 					case c.custom_field.field_format
 						when "int"
@@ -316,14 +304,14 @@ module Redmine
 				sheet1.column(idx+1).default_format = Spreadsheet::Format.new(opt) unless opt.empty?
 				columns_width[idx+1] = width unless columns_width[idx+1] >= width
 			end
-	  
+
 	  	return columns_width
 		end
-		
+
 		def update_sheet_formatting(sheet1,columns_width)
-			
+
 			sheet1.row(0).count.times do |idx|
-				
+
 					do_wrap = columns_width[idx] > 60 ? 1 : 0
 					sheet1.column(idx).width = columns_width[idx] > 60 ? 60 : columns_width[idx]
 
@@ -346,9 +334,9 @@ module Redmine
 		def get_value_width(value)
 
 			if ['Time', 'Date'].include?(value.class.name)
-				return 18 unless value.to_s.length < 18 
+				return 18 unless value.to_s.length < 18
 			end
-			
+
 			tot_w = Array.new
 			tot_w << Float(0)
 			idx=0
@@ -362,15 +350,15 @@ module Redmine
 						idx = idx + 1
 						tot_w << Float(0)
 				else
-					tot_w[idx] += 1.05	
+					tot_w[idx] += 1.05
 				end
 			end
-			
+
 			wdth=0
 			tot_w.each do |w|
-				wdth = w unless w<wdth 
+				wdth = w unless w<wdth
 			end
-			
+
 			return wdth+1.5
 		end
 
