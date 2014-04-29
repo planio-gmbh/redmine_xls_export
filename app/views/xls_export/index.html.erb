@@ -4,7 +4,7 @@
 <% params[:sort]=session['issues_index_sort'] unless session['issues_index_sort'].blank? %>
 
 <div id="settings">
-  <% form_tag({:controller => 'xls_export', :action => 'index', :project_id => params[:project_id]}) do %>
+  <%= form_tag({:controller => 'xls_export', :action => 'index', :project_id => params[:project_id]}) do %>
 
     <%= render :partial => 'settings/xls_export_settings.html', :locals => {:settings => @settings, :export => true}%>
 
