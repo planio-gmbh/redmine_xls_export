@@ -1,6 +1,7 @@
 en:
   label_plugin_xlse_legend_0: "Columns options"
   label_plugin_xlse_legend_1: "Export options"
+  label_plugin_xlse_legend_1a: "Date format options"
   label_plugin_xlse_legend_2: "Extra options"
   label_plugin_xlse_legend_2_disabled: "Extra options (install rubyzip gem to access them)"
 
@@ -14,9 +15,11 @@ en:
   label_plugin_xlse_query_columns_only: "Export selected columns only"
   label_plugin_xlse_group: "Split by grouping criteria"
   label_plugin_xlse_generate_name: "Suggest export name"
+  label_plugin_xlse_strip_html_tags: "Strip HTML tags"
 
   label_plugin_xlse_export_attached: "Export attachments"
   label_plugin_xlse_separate_journals: "Issues journals as separate files"
+  label_plugin_xlse_export_status_histories: "Export status histories"
 
   label_plugin_xlse_issues_limit: "Override export limit"
   label_plugin_xlse_issues_limit_help: "0 - use default"
@@ -35,4 +38,19 @@ en:
   label_plugin_xlse_export_format_quick_tooltip: "Export using default settings"
   label_plugin_xlse_export_format_detailed: "Detailed"
   label_plugin_xlse_export_format_detailed_tooltip: "Choose options before export"
+
+  label_plugin_xlse_date_created: "Created"
+  label_plugin_xlse_date_updated: "Updated"
+  label_plugin_xlse_date_start: "Start date"
+  label_plugin_xlse_date_due: "Due date"
+  label_plugin_xlse_date_closed: "Closed"
+  default_created_format: "dd.mm.yyyy hh:mm:ss"
+  default_updated_format: "dd.mm.yyyy hh:mm:ss"
+  default_start_date_format: "dd.mm.yyyy"
+  default_due_date_format: "dd.mm.yyyy"
+  default_closed_date_format: "dd.mm.yyyy hh:mm:ss"
+
+  plugin_xlse_field_issue_created_on: "Issue created"
+  plugin_xlse_field_status_from: "Status from"
+  plugin_xlse_field_status_to: "Status to"
 

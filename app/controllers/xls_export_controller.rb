@@ -35,7 +35,7 @@ class XlsExportController < ApplicationController
       @issues_export_offset=params[:issues_export_offset].to_i || 0
       if retrieve_xls_export_data(@settings)
         export_name = get_xls_export_name(@settings)
-        send_data(export_to_string(export_name), :type => export_name[1].to_sym, :filename => export_name.join("."))
+        send_data(export_to_string(export_name), :type => export_name[1].to_sym, :filename => filename_for_content_disposition(export_name.join(".")))
       else
         redirect_to :controller => 'issues', :action => 'index', :project_id => @project
       end
@@ -47,7 +47,7 @@ class XlsExportController < ApplicationController
     @issues_export_offset=params[:issues_export_offset].to_i || 0
     if retrieve_xls_export_data
       export_name = get_xls_export_name
-      send_data(export_to_string(export_name), :type => export_name[1].to_sym, :filename => export_name.join("."))
+      send_data(export_to_string(export_name), :type => export_name[1].to_sym, :filename => filename_for_content_disposition(export_name.join(".")))
     else
       # Send html if the query is not valid
       render(:template => 'issues/index', :layout => !request.xhr?)
@@ -100,8 +100,14 @@ protected
     render_404
   end
 
+  def zip_export_file?(settings)
+    settings['export_attached'] == '1' ||
+    settings['separate_journals'] == '1' ||
+    settings['export_status_histories'] == '1'
+  end
+
   def get_xls_export_name(settings = @settings)
-    ext=(settings['export_attached'] == '1' || settings['separate_journals'] == '1') ? 'zip' : 'xls'
+    ext= zip_export_file?(settings) ? 'zip' : 'xls'
     return ["export",ext] if @settings['export_name'].blank?
     return ["#{@settings['export_name']}",ext] unless @settings['generate_name'] == '1'
 
@@ -137,11 +143,19 @@ protected
           end
         end
         if @settings['separate_journals'] == '1'
-          journal_xls=journal_details_to_xls(issue)
+          journal_xls=journal_details_to_xls(issue, @settings)
           if journal_xls
             zip_stream.put_next_entry("#{JOURNALS_FOLDER}/%05i_journal_details.xls" % [issue.id],nil,nil,Zip::ZipEntry::DEFLATED,Zlib::BEST_COMPRESSION)
             zip_stream.write(journal_xls)
           end
+        end
+      end
+
+      if @settings['export_status_histories'] == '1'
+        status_histories_xls = status_histories_to_xls(@issues, @settings)
+        if status_histories_xls
+          zip_stream.put_next_entry("status_histories.xls",nil,nil,Zip::ZipEntry::DEFLATED,Zlib::BEST_COMPRESSION)
+          zip_stream.write(status_histories_xls)
         end
       end
     end

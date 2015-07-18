@@ -16,21 +16,6 @@ a.xlse {
   color: #aaa;
 }
 
-.tabular.settings label.floating {
-  margin-left: 0px;
-  width: 270px;
-}
-
-.tabular.settings p {
-  padding-left: 180px;
-}
-
-.tabular.settings label {
-  margin-left: -180px;
-  width: 175px;
-}
-
 .tabular.box p em.info {
     display: inline;
 }
-
