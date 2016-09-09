@@ -1,0 +1,17 @@
+<% if @query.valid? && !@issues.empty? %>
+  <%= stylesheet_link_tag("xls_export.css", :plugin => XLSE_AssetHelpers::PLUGIN_NAME, :media => "screen") %>
+  <p class="other-formats">
+    <%= l :label_plugin_xlse_export_format %>
+    <span>
+      <%= link_to l(:label_plugin_xlse_export_format_quick),
+        params.merge(controller: 'xls_export', action: 'export_current'),
+        :class => 'xls', :rel => 'nofollow', :title => l(:label_plugin_xlse_export_format_quick_tooltip) %>
+    </span>
+    <span>
+      <%= link_to l(:label_plugin_xlse_export_format_detailed),
+        params.merge(controller: 'xls_export', action: 'index'),
+         :class => 'xlse', :title => l(:label_plugin_xlse_export_format_detailed_tooltip) %>
+    </span>
+  </p>
+<% end %>
+

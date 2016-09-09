@@ -1,5 +1,5 @@
 require 'xlse_asset_helpers'
-require_dependency 'xls_export'
+require 'xls_export'
 begin
   require 'zip/zip'
 rescue LoadError
@@ -7,7 +7,6 @@ rescue LoadError
 end
 
 class XlsExportController < ApplicationController
-  unloadable
 
   ZIP_FILENAMES_ENCODING = 'cp866'
   ZIP_FILENAMES_ENCODING_FALLBACK = 'cp850'
@@ -29,10 +28,10 @@ class XlsExportController < ApplicationController
   before_filter :find_optional_project_xls
 
   def index
-    @issues_export_offset=params[:issues_export_offset].to_i || 0
+    @issues_export_offset = params[:issues_export_offset].to_i
     if request.post?
       @settings = params[:settings]
-      @issues_export_offset=params[:issues_export_offset].to_i || 0
+      @issues_export_offset = params[:issues_export_offset].to_i
       if retrieve_xls_export_data(@settings)
         export_name = get_xls_export_name(@settings)
         send_data(export_to_string(export_name), :type => export_name[1].to_sym, :filename => filename_for_content_disposition(export_name.join(".")))
@@ -40,12 +39,12 @@ class XlsExportController < ApplicationController
         redirect_to :controller => 'issues', :action => 'index', :project_id => @project
       end
     end
-    @settings=XLSE_AssetHelpers::settings
+    @settings = XLSE_AssetHelpers.settings
   end
 
   def export_current
-    @settings=XLSE_AssetHelpers::settings
-    @issues_export_offset=params[:issues_export_offset].to_i || 0
+    @settings = XLSE_AssetHelpers.settings
+    @issues_export_offset = params[:issues_export_offset].to_i
     if retrieve_xls_export_data(@settings)
       export_name = get_xls_export_name(@settings)
       send_data(export_to_string(export_name), :type => export_name[1].to_sym, :filename => filename_for_content_disposition(export_name.join(".")))
@@ -55,7 +54,13 @@ class XlsExportController < ApplicationController
     end
   end
 
-protected
+  # use the same sorting the user selected in issues#index
+  def sort_name
+    'issues_index_sort'
+  end
+
+  private
+
   def find_optional_project_xls
     @project = Project.find(params[:project_id]) unless params[:project_id].blank?
     allowed = User.current.allowed_to?({:controller => 'issues', :action => 'index'}, @project, :global => true)
@@ -64,20 +69,13 @@ protected
     render_404
   end
 
+
   def retrieve_xls_export_data(settings=nil)
-    params[:query_id]=session[:query][:id] if !session[:query].nil? && !session[:query][:id].blank?
-    if !params[:query_id].blank? && !session['issues_index_sort'].blank?
-      user_sort_string=session['issues_index_sort']
-      retrieve_query
-      session['issues_index_sort']=user_sort_string if session['issues_index_sort'].blank?
-    else
-      retrieve_query
-    end
-    params[:sort]=session['issues_index_sort'] if params[:sort].nil? && !session['issues_index_sort'].nil?
-# taken from issues_controller directly
-# start of original code
-    sort_init(@query.sort_criteria.empty? ? [%w(id desc)] : @query.sort_criteria)
+    # taken from issues_controller
+    retrieve_query
+    sort_init(@query.sort_criteria.empty? ? [['id', 'desc']] : @query.sort_criteria)
     sort_update(@query.sortable_columns)
+    @query.sort_criteria = sort_criteria.to_a
 
     if @query.valid?
       @issue_count = @query.issue_count
@@ -92,9 +90,12 @@ protected
 #        @issue_count_by_group = @query.issue_count_by_group
 # end of original code
         @settings=XLSE_AssetHelpers::settings unless settings
+      else
+        @issues = Issue.none
       end
       return true
     end
+
 
     return false
   rescue ActiveRecord::RecordNotFound

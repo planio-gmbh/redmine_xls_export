@@ -1,7 +1,4 @@
-require_dependency 'spreadsheet'
 require 'uri'
-require 'rubygems'
-require 'nokogiri'
 
 module Redmine
   module Export
